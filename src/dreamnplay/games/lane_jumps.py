@@ -5,6 +5,7 @@ import sys
 import cv2
 import mediapipe as mp
 from pygame_emojis import load_emoji
+
 # Initialize pygame
 pygame.init()
 
@@ -34,13 +35,11 @@ PLAYER_START_Y = HEIGHT - 80
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 
-
-# Choose the size
+# Emoji icons
 size = (40, 40)
-
-# Load the emoji as a pygame.Surface
 hand_emoji = load_emoji('🖐️', size)
 keyboard_emoji = load_emoji('⌨️', size)
+body_emoji = load_emoji('🕺', size)
 
 # Game variables
 player_x = PLAYER_START_X
@@ -54,6 +53,8 @@ mp_draw = mp.solutions.drawing_utils
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+
+# MediaPipe hands and pose
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(
     static_image_mode=False,
@@ -62,6 +63,8 @@ hands = mp_hands.Hands(
     min_tracking_confidence=0.7
 )
 
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.7)
 
 def create_hole():
     lane = random.randint(0, 2)
@@ -69,11 +72,9 @@ def create_hole():
     y = -HOLE_HEIGHT
     return pygame.Rect(x, y, LANE_WIDTH, HOLE_HEIGHT)
 
-
 def draw_holes():
     for hole in holes:
         pygame.draw.rect(screen, WHITE, hole)
-
 
 def move_holes():
     global holes, score
@@ -84,7 +85,6 @@ def move_holes():
         holes.append(create_hole())
     score += 1
 
-
 def check_collision():
     player_rect = pygame.Rect(player_x, PLAYER_START_Y,
                               PLAYER_WIDTH, PLAYER_HEIGHT)
@@ -94,46 +94,49 @@ def check_collision():
                 return True
     return False
 
-
 frame_count = 0
-hand_position = None
-player_lane = 1
 hand_position = None
 hand_position_y = None
 hand_size = None
+nose_position = None
+body_control = False
+
 # Main game loop
 while running:
     screen.fill(BLACK)
 
     # Process webcam frames at intervals
     frame_count += 1
-
     if frame_count % 3 == 0:
         hand_position = None
         hand_position_y = None
         hand_size = None
+        nose_position = None
         _, frame = cap.read()
         frame = cv2.flip(frame, 1)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = hands.process(rgb_frame)
-
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
+        
+        # Hand detection
+        results_hands = hands.process(rgb_frame)
+        if results_hands.multi_hand_landmarks:
+            for hand_landmarks in results_hands.multi_hand_landmarks:
                 index_finger_tip = hand_landmarks.landmark[8]
                 wrist = hand_landmarks.landmark[0]
-                # Normalized X position (0 to 1)
                 hand_position = index_finger_tip.x
                 hand_position_y = index_finger_tip.y
                 hand_size = ((index_finger_tip.x - wrist.x) ** 2 +
                              (index_finger_tip.y - wrist.y) ** 2) ** 0.5
 
-            # if hand_size is not None and hand_size > 0.3:
-            #     mp_draw.draw_landmarks(frame, hand_landmarks,
-            #                         mp_hands.HAND_CONNECTIONS)
-            #     cv2.imshow("Webcam Feed", frame)
-            #     cv2.waitKey(1)
-    # Update player position based on hand position
+        # Pose detection
+        results_pose = pose.process(rgb_frame)
+        if results_pose.pose_landmarks:
+            nose = results_pose.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE]
+            nose_position = nose.x  # Normalized X position (0 to 1)
+
+    # Hand control
     hand_control = False
+    if False:
+        pass
     if (hand_position is not None) and (hand_size is not None and hand_size > 0.2):
         hand_control = True
         if hand_position < 0.3:
@@ -142,8 +145,19 @@ while running:
             player_lane = 2  # Right lane
         else:
             player_lane = 1  # Middle lane
+
+    # Body control as fallback
+    elif nose_position is not None:
+        body_control = True
+        if nose_position < 0.3:
+            player_lane = 0  # Left lane
+        elif nose_position > 0.7:
+            player_lane = 2  # Right lane
+        else:
+            player_lane = 1  # Middle lane
+
+    # Keyboard input fallback
     else:
-        # Handle keyboard inputs
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -156,22 +170,21 @@ while running:
     player_lane = max(0, min(player_lane, 2))
     player_x = player_lane * LANE_WIDTH + PLAYER_START_X
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
     move_holes()
     draw_holes()
 
-    # Display hand or keyboard emoji
+    # Display control method emoji
+    bottom_live_position = HEIGHT - 40
     disp_emoji_location = (WIDTH - 50, 20)
     if hand_control:
-        # Hand emoji at bottom-left
         screen.blit(hand_emoji, disp_emoji_location)
-        disp_emoji_location = (int(WIDTH*hand_position), HEIGHT-10)
+        disp_emoji_location = (int(WIDTH*hand_position), bottom_live_position)
         screen.blit(hand_emoji, disp_emoji_location)
+    elif body_control:
+        screen.blit(body_emoji, disp_emoji_location)
+        disp_emoji_location = (int(WIDTH*nose_position), bottom_live_position)
+        screen.blit(body_emoji, disp_emoji_location)
     else:
-        # Keyboard emoji at bottom-left
         screen.blit(keyboard_emoji, disp_emoji_location)
 
     pygame.draw.rect(screen, BLUE, (player_x, PLAYER_START_Y,
