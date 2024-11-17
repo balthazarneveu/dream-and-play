@@ -1,155 +1,143 @@
 import pygame
 import random
 import sys
-
 from dreamnplay.controller.webcam_controller import Controller
 from dreamnplay.view.overlay_controller import display_control_mode
 
-# Initialize pygame
-pygame.init()
 
-# Screen dimensions
-WIDTH, HEIGHT = 400, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("3-Lane Jumping Game")
+class ThreeLaneGame:
+    def __init__(self, width=400, height=600, controller=None):
+        pygame.init()
+        self.WIDTH = width
+        self.HEIGHT = height
+        self.LANE_WIDTH = self.WIDTH // 3
+        self.HOLE_HEIGHT = 50
+        self.SPEED = 5
+        self.PLAYER_WIDTH = 30
+        self.PLAYER_HEIGHT = 30
+        self.PLAYER_START_Y = self.HEIGHT - 80
+        self.PLAYER_START_X = self.LANE_WIDTH // 2 - self.PLAYER_WIDTH // 2
 
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
-RED = (255, 0, 0)
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("3-Lane Jumping Game")
+        self.font = pygame.font.Font(None, 36)
+        self.clock = pygame.time.Clock()
 
-# Lane properties
-LANE_WIDTH = WIDTH // 3
-HOLE_HEIGHT = 50
-SPEED = 5
+        self.player_lane = 1
+        self.player_x = self.PLAYER_START_X
+        self.holes = []
+        self.score = 0
+        self.running = True
+        self.controller = controller
 
-# Player properties
-PLAYER_WIDTH = 30
-PLAYER_HEIGHT = 30
-PLAYER_START_X = LANE_WIDTH // 2 - PLAYER_WIDTH // 2
-PLAYER_START_Y = HEIGHT - 80
+    def create_hole(self):
+        lane = random.randint(0, 2)
+        x = lane * self.LANE_WIDTH
+        y = -self.HOLE_HEIGHT
+        return pygame.Rect(x, y, self.LANE_WIDTH, self.HOLE_HEIGHT)
 
-# Setup
-clock = pygame.time.Clock()
-font = pygame.font.Font(None, 36)
+    def draw_holes(self):
+        for hole in self.holes:
+            pygame.draw.rect(self.screen, (255, 255, 255), hole)
 
-# Game variables
-player_x = PLAYER_START_X
-player_lane = 1
-holes = []
-score = 0
-running = True
+    def move_holes(self):
+        for hole in self.holes:
+            hole.y += self.SPEED
+        self.holes = [hole for hole in self.holes if hole.y < self.HEIGHT]
+        if len(self.holes) == 0 or self.holes[-1].y > 150:
+            self.holes.append(self.create_hole())
+        self.score += 1
 
-# Initialize Controller
-controller = Controller()
+    def check_collision(self):
+        player_rect = pygame.Rect(
+            self.player_x, self.PLAYER_START_Y, self.PLAYER_WIDTH, self.PLAYER_HEIGHT
+        )
+        for hole in self.holes:
+            if hole.y + self.HOLE_HEIGHT > self.PLAYER_START_Y and hole.y < self.PLAYER_START_Y + self.PLAYER_HEIGHT:
+                if hole.x <= self.player_x <= hole.x + self.LANE_WIDTH:
+                    return True
+        return False
 
+    def process_motion(self):
+        if self.controller.current_position is not None:
+            if self.controller.current_position < 0.3:
+                self.player_lane = 0
+            elif self.controller.current_position > 0.7:
+                self.player_lane = 2
+            else:
+                self.player_lane = 1
 
-def create_hole():
-    lane = random.randint(0, 2)
-    x = lane * LANE_WIDTH
-    y = -HOLE_HEIGHT
-    return pygame.Rect(x, y, LANE_WIDTH, HOLE_HEIGHT)
-
-
-def draw_holes():
-    for hole in holes:
-        pygame.draw.rect(screen, WHITE, hole)
-
-
-def move_holes():
-    global holes, score
-    for hole in holes:
-        hole.y += SPEED
-    holes = [hole for hole in holes if hole.y < HEIGHT]
-    if len(holes) == 0 or holes[-1].y > 150:
-        holes.append(create_hole())
-    score += 1
-
-
-def check_collision():
-    player_rect = pygame.Rect(player_x, PLAYER_START_Y,
-                              PLAYER_WIDTH, PLAYER_HEIGHT)
-    for hole in holes:
-        if hole.y + HOLE_HEIGHT > PLAYER_START_Y and hole.y < PLAYER_START_Y + PLAYER_HEIGHT:
-            if hole.x <= player_x <= hole.x + LANE_WIDTH:
-                return True
-    return False
-
-
-def process_motion(controller, player_lane):
-    """
-    Determine the control method (hand, body, or keyboard) and return the updated lane.
-    """
-
-    # self.hand_control and self.hand_position is not None:
-    if controller.current_position is not None:
-        # Hand gesture control
-        if controller.current_position < 0.3:
-            player_lane = 0  # Left lane
-        elif controller.current_position > 0.7:
-            player_lane = 2  # Right lane
-        else:
-            player_lane = 1  # Middle lane
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                print("QUIT!")
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if controller.current_position is None:
-                if event.key == pygame.K_LEFT:
-                    player_lane -= 1
-                elif event.key == pygame.K_RIGHT:
-                    player_lane += 1
-    # Ensure the lane remains within bounds
-    return max(0, min(player_lane, 2))
+            if event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                    pygame.quit()
+                    sys.exit()
+                if self.controller.current_position is None:
+                    if event.key == pygame.K_LEFT:
+                        self.player_lane -= 1
+                    elif event.key == pygame.K_RIGHT:
+                        self.player_lane += 1
+        self.player_lane = max(0, min(self.player_lane, 2))
+
+    def play_iteration(self):
+        self.screen.fill((0, 0, 0))
+        self.player_x = self.player_lane * self.LANE_WIDTH + self.PLAYER_START_X
+
+        self.move_holes()
+        self.draw_holes()
+
+        pygame.draw.rect(
+            self.screen,
+            (0, 0, 255),
+            (self.player_x, self.PLAYER_START_Y,
+             self.PLAYER_WIDTH, self.PLAYER_HEIGHT),
+        )
+
+        if self.check_collision():
+            self.running = False
+
+        score_text = self.font.render(
+            f"Score: {self.score}", True, (255, 255, 255))
+        self.screen.blit(score_text, (10, 10))
+
+    def game_over(self):
+        self.running = False
+
+        self.screen.fill((0, 0, 0))
+        game_over_text = self.font.render("Game Over!", True, (255, 0, 0))
+        final_score_text = self.font.render(
+            f"Final Score: {self.score}", True, (255, 255, 255))
+        self.screen.blit(
+            game_over_text, (self.WIDTH // 2 -
+                             game_over_text.get_width() // 2, self.HEIGHT // 3)
+        )
+        self.screen.blit(
+            final_score_text,
+            (self.WIDTH // 2 - final_score_text.get_width() // 2, self.HEIGHT // 2),
+        )
+        pygame.display.flip()
+        pygame.time.wait(3000)
 
 
-# Main game loop
-while running:
-    screen.fill(BLACK)
-    # Process input
-    controller.process_webcam()
+def main_loop():
+    controller = Controller(webcam_show=False)
+    game = ThreeLaneGame(controller=controller)
+    while game.running:
+        controller.process_webcam()
+        game.process_motion()
+        game.play_iteration()
+        display_control_mode(game.controller, game.screen,
+                             game.WIDTH, game.HEIGHT)
+        pygame.display.flip()
+        game.clock.tick(30)
+    controller.release_resources()
+    game.game_over()
+    pygame.quit()
+    sys.exit()
 
-    # Main game loop logic
-    # --------------------------------
-    player_lane = process_motion(controller, player_lane)
 
-    # Update player position
-    player_x = player_lane * LANE_WIDTH + PLAYER_START_X
-
-    move_holes()
-    draw_holes()
-
-    pygame.draw.rect(screen, BLUE, (player_x, PLAYER_START_Y,
-                                    PLAYER_WIDTH, PLAYER_HEIGHT))
-
-    if check_collision():
-        running = False
-
-    score_text = font.render(f"Score: {score}", True, WHITE)
-    screen.blit(score_text, (10, 10))
-
-    display_control_mode(controller, screen, WIDTH, HEIGHT)
-    pygame.display.flip()
-    clock.tick(30)  # Ensure consistent frame rate
-
-# Cleanup
-controller.release_resources()
-
-screen.fill(BLACK)
-game_over_text = font.render("Game Over!", True, RED)
-score_text = font.render(f"Final Score: {score}", True, WHITE)
-screen.blit(game_over_text, (WIDTH // 2 -
-            game_over_text.get_width() // 2, HEIGHT // 3))
-screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, HEIGHT // 2))
-pygame.display.flip()
-pygame.time.wait(3000)
-
-pygame.quit()
-sys.exit()
+if __name__ == "__main__":
+    main_loop()
