@@ -1,8 +1,9 @@
 import pygame
 import random
 import sys
-from pygame_emojis import load_emoji
+
 from dreamnplay.controller.webcam_controller import Controller
+from dreamnplay.view.overlay_controller import display_control_mode
 
 # Initialize pygame
 pygame.init()
@@ -32,12 +33,6 @@ PLAYER_START_Y = HEIGHT - 80
 # Setup
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
-
-# Load emojis
-size = (40, 40)
-hand_emoji = load_emoji('🖐️', size)
-keyboard_emoji = load_emoji('⌨️', size)
-body_emoji = load_emoji('🕺', size)
 
 # Game variables
 player_x = PLAYER_START_X
@@ -82,13 +77,48 @@ def check_collision():
     return False
 
 
+def process_motion(controller, player_lane):
+    """
+    Determine the control method (hand, body, or keyboard) and return the updated lane.
+    """
+
+    # self.hand_control and self.hand_position is not None:
+    if controller.current_position is not None:
+        # Hand gesture control
+        if controller.current_position < 0.3:
+            player_lane = 0  # Left lane
+        elif controller.current_position > 0.7:
+            player_lane = 2  # Right lane
+        else:
+            player_lane = 1  # Middle lane
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                print("QUIT!")
+                pygame.quit()
+                sys.exit()
+            if controller.current_position is None:
+                if event.key == pygame.K_LEFT:
+                    player_lane -= 1
+                elif event.key == pygame.K_RIGHT:
+                    player_lane += 1
+    # Ensure the lane remains within bounds
+    return max(0, min(player_lane, 2))
+
+
 # Main game loop
 while running:
     screen.fill(BLACK)
-
     # Process input
     controller.process_webcam()
-    player_lane = controller.get_control(player_lane)
+
+    # Main game loop logic
+    # --------------------------------
+    player_lane = process_motion(controller, player_lane)
 
     # Update player position
     player_x = player_lane * LANE_WIDTH + PLAYER_START_X
@@ -96,22 +126,8 @@ while running:
     move_holes()
     draw_holes()
 
-    # Display control method emoji
-    bottom_live_position = HEIGHT - 40
-    disp_emoji_location = (WIDTH - 50, 20)
-    if controller.hand_control:
-        screen.blit(hand_emoji, disp_emoji_location)
-        disp_emoji_location = (int(WIDTH*controller.current_position), bottom_live_position)
-        screen.blit(hand_emoji, disp_emoji_location)
-    elif controller.body_control:
-        screen.blit(body_emoji, disp_emoji_location)
-        disp_emoji_location = (int(WIDTH*controller.current_position), bottom_live_position)
-        screen.blit(body_emoji, disp_emoji_location)
-    else:
-        screen.blit(keyboard_emoji, disp_emoji_location)
-
     pygame.draw.rect(screen, BLUE, (player_x, PLAYER_START_Y,
-                     PLAYER_WIDTH, PLAYER_HEIGHT))
+                                    PLAYER_WIDTH, PLAYER_HEIGHT))
 
     if check_collision():
         running = False
@@ -119,6 +135,7 @@ while running:
     score_text = font.render(f"Score: {score}", True, WHITE)
     screen.blit(score_text, (10, 10))
 
+    display_control_mode(controller, screen, WIDTH, HEIGHT)
     pygame.display.flip()
     clock.tick(30)  # Ensure consistent frame rate
 

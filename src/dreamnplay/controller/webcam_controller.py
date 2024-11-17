@@ -84,38 +84,6 @@ class Controller:
         self.frame_count += 1
         return
 
-    def get_control(self, player_lane):
-        """
-        Determine the control method (hand, body, or keyboard) and return the updated lane.
-        """
-
-        # self.hand_control and self.hand_position is not None:
-        if self.current_position is not None:
-            # Hand gesture control
-            if self.current_position < 0.3:
-                player_lane = 0  # Left lane
-            elif self.current_position > 0.7:
-                player_lane = 2  # Right lane
-            else:
-                player_lane = 1  # Middle lane
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                    print("QUIT!")
-                    pygame.quit()
-                    sys.exit()
-                if not self.hand_control and not self.body_control:
-                    if event.key == pygame.K_LEFT:
-                        player_lane -= 1
-                    elif event.key == pygame.K_RIGHT:
-                        player_lane += 1
-        # Ensure the lane remains within bounds
-        return max(0, min(player_lane, 2))
-
     def release_resources(self):
         """Release webcam and cleanup resources."""
         self.cap.release()
