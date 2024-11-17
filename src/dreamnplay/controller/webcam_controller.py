@@ -37,6 +37,7 @@ class Controller:
         self.hand_control = False
         self.body_control = False
         self.webcam_show = webcam_show
+        self.current_position = None
 
     def process_webcam(self):
         """Process webcam input to detect hands or body."""
@@ -45,6 +46,7 @@ class Controller:
             # Reset control flags
             self.hand_control = False
             self.body_control = False
+            self.current_position = None
             _, frame = self.cap.read()
             frame = cv2.flip(frame, 1)
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -55,11 +57,12 @@ class Controller:
                 for hand_landmarks in results_hands.multi_hand_landmarks:
                     index_finger_tip = hand_landmarks.landmark[8]
                     wrist = hand_landmarks.landmark[0]
-                    self.hand_position = index_finger_tip.x
+                    hand_position = index_finger_tip.x
                     self.hand_size = ((index_finger_tip.x - wrist.x) ** 2 +
                                       (index_finger_tip.y - wrist.y) ** 2) ** 0.5
                     self.hand_control = self.hand_size > 0.2
-
+                    if self.hand_control:
+                        self.current_position = hand_position
                     if self.webcam_show:
                         mp_draw.draw_landmarks(frame, hand_landmarks,
                                                mp_hands.HAND_CONNECTIONS)
@@ -69,11 +72,12 @@ class Controller:
                 results_pose = self.pose.process(rgb_frame)
                 if results_pose.pose_landmarks:
                     nose = results_pose.pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.NOSE]
-                    self.nose_position = nose.x
                     # Body control only if hand control is inactive
                     self.body_control = not self.hand_control
-                    mp_draw.draw_landmarks(frame, results_pose.pose_landmarks,
-                                           mp_pose.POSE_CONNECTIONS)
+                    self.current_position = nose.x
+                    if self.webcam_show:
+                        mp_draw.draw_landmarks(frame, results_pose.pose_landmarks,
+                                               mp_pose.POSE_CONNECTIONS)
             if self.webcam_show:
                 cv2.imshow("Webcam Feed", frame)
                 cv2.waitKey(1)
@@ -85,23 +89,16 @@ class Controller:
         Determine the control method (hand, body, or keyboard) and return the updated lane.
         """
 
-        if self.hand_control and self.hand_position is not None:
+        # self.hand_control and self.hand_position is not None:
+        if self.current_position is not None:
             # Hand gesture control
-            if self.hand_position < 0.3:
+            if self.current_position < 0.3:
                 player_lane = 0  # Left lane
-            elif self.hand_position > 0.7:
+            elif self.current_position > 0.7:
                 player_lane = 2  # Right lane
             else:
                 player_lane = 1  # Middle lane
 
-        elif self.body_control and self.nose_position is not None:
-            # Body position control
-            if self.nose_position < 0.3:
-                player_lane = 0  # Left lane
-            elif self.nose_position > 0.7:
-                player_lane = 2  # Right lane
-            else:
-                player_lane = 1  # Middle lane
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

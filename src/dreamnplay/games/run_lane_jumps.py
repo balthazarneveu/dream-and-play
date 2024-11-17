@@ -97,10 +97,15 @@ while running:
     draw_holes()
 
     # Display control method emoji
+    bottom_live_position = HEIGHT - 40
     disp_emoji_location = (WIDTH - 50, 20)
     if controller.hand_control:
         screen.blit(hand_emoji, disp_emoji_location)
+        disp_emoji_location = (int(WIDTH*controller.current_position), bottom_live_position)
+        screen.blit(hand_emoji, disp_emoji_location)
     elif controller.body_control:
+        screen.blit(body_emoji, disp_emoji_location)
+        disp_emoji_location = (int(WIDTH*controller.current_position), bottom_live_position)
         screen.blit(body_emoji, disp_emoji_location)
     else:
         screen.blit(keyboard_emoji, disp_emoji_location)
