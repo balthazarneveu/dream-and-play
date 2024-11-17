@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "dreamnplay"
+version = "0.0.1"
+authors = [
+  { name="Balthazar Neveu", email="balthazarneveu@gmail.com" },
+]
+dependencies = [
+
+  "numpy>=1.21.6",
+  "Pillow>=9.0.1",
+  "PyYAML>=5.4.1",
+]
+
+description = "Library to create "
+readme = "readme.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: The Unlicense (Unlicense)",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/balthazarneveu/dream-and-play"
+"Bug Tracker" = "https://github.com/balthazarneveu/dream-and-play/issues"
+
+[project.optional-dependencies]
+
+pytest=[
+  "pytest>=6.2.5"
+]
+
+full=[
+  "PyQt6>=6.5.2",
+  "PyQt6_sip>=13.5.2",
+  "opencv_python_headless>=4.8.1.78",
+  "pytest>=6.2.5",
+  "ipywidgets>=7.7.1",
+  "pandas",
+  "gradio",
+]
