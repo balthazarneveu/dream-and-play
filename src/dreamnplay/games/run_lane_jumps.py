@@ -1,15 +1,13 @@
 import pygame
 import random
 import sys
-from dreamnplay.controller.webcam_controller import Controller
-from dreamnplay.view.overlay_controller import display_control_mode
+from dreamnplay.engine.runnable_game import RunnableGame
+from dreamnplay.engine.game import Game
 
 
-class ThreeLaneGame:
+class ThreeLaneGame(Game):
     def __init__(self, width=400, height=600, controller=None):
-        pygame.init()
-        self.WIDTH = width
-        self.HEIGHT = height
+        super().__init__(controller=controller, width=width, height=height)
         self.LANE_WIDTH = self.WIDTH // 3
         self.HOLE_HEIGHT = 50
         self.SPEED = 5
@@ -18,7 +16,7 @@ class ThreeLaneGame:
         self.PLAYER_START_Y = self.HEIGHT - 80
         self.PLAYER_START_X = self.LANE_WIDTH // 2 - self.PLAYER_WIDTH // 2
 
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        
         pygame.display.set_caption("3-Lane Jumping Game")
         self.font = pygame.font.Font(None, 36)
         self.clock = pygame.time.Clock()
@@ -28,7 +26,6 @@ class ThreeLaneGame:
         self.holes = []
         self.score = 0
         self.running = True
-        self.controller = controller
 
     def create_hole(self):
         lane = random.randint(0, 2)
@@ -82,7 +79,7 @@ class ThreeLaneGame:
                         self.player_lane += 1
         self.player_lane = max(0, min(self.player_lane, 2))
 
-    def play_iteration(self):
+    def update(self):
         self.screen.fill((0, 0, 0))
         self.player_x = self.player_lane * self.LANE_WIDTH + self.PLAYER_START_X
 
@@ -122,22 +119,5 @@ class ThreeLaneGame:
         pygame.time.wait(3000)
 
 
-def main_loop():
-    controller = Controller(webcam_show=False)
-    game = ThreeLaneGame(controller=controller)
-    while game.running:
-        controller.process_webcam()
-        game.process_motion()
-        game.play_iteration()
-        display_control_mode(game.controller, game.screen,
-                             game.WIDTH, game.HEIGHT)
-        pygame.display.flip()
-        game.clock.tick(30)
-    controller.release_resources()
-    game.game_over()
-    pygame.quit()
-    sys.exit()
-
-
 if __name__ == "__main__":
-    main_loop()
+    RunnableGame(ThreeLaneGame).run()
