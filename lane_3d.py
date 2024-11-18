@@ -51,7 +51,7 @@ def create_obstacle():
     obstacle = Entity(
         model='cube',
         # Different color for tall obstacles
-        color=color.magenta if height == 0.5 else color.orange,
+        color=color.magenta if height == 0.5 else color.turquoise,
         scale=(0.5, height, 0.5),  # Adjust height
         # Position the obstacle properly on the ground
         position=(lane, -2 + height / 2, 20)
@@ -158,7 +158,7 @@ def update():
             points -= 1
             score.text = f"Score: {points}"
         # Remove obstacles that go off-screen
-        if obstacle.z < -20:
+        if obstacle.z < -40:
             obstacles.remove(obstacle)
             destroy(obstacle)
 
