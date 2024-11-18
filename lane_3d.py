@@ -1,3 +1,4 @@
+from dreamnplay.controller.webcam_controller import Controller
 from ursina import *
 from random import choice, randint
 
@@ -101,6 +102,10 @@ def reset_player():
 # Movement logic
 
 
+controller = Controller(
+    webcam_show=False, allow_hand_control=False, allow_body_control=True)
+
+
 def update():
     global player_velocity, points, is_falling
 
@@ -126,23 +131,19 @@ def update():
                 invoke(reset_player, delay=0.5)
         return  # Skip further updates while falling
 
-    # Player movement between lanes
-    if held_keys['left arrow']:
-        player.x = max(player.x - 0.1, -1)
+    controller.process_webcam()
+    if controller.current_position is not None:
+        player.x = min(max((controller.current_position - 0.5)*2, -1), 1)
+    else:
+        # Player movement between lanes
+        if held_keys['left arrow']:
+            player.x = max(player.x - 0.1, -1)
 
-    if held_keys['right arrow']:
-        player.x = min(player.x + 0.1, 1)
-
+        if held_keys['right arrow']:
+            player.x = min(player.x + 0.1, 1)
     # Jumping
     if held_keys['space'] and player.y <= -2:  # Allow jump only if player is on the ground
         player_velocity = 0.25  # Stronger upward velocity for longer jumps
-
-    # Crouching
-    # if held_keys['down arrow']:
-
-    #     player.scale_y = 0.25  # Shrink player for crouch
-    # else:
-    #     player.scale_y = 0.5  # Reset player to normal size
 
     # Crouching
     if held_keys['down arrow']:
@@ -186,7 +187,7 @@ def update():
         if (
             abs(obstacle.x - player.x) < 0.5 and  # Horizontal proximity
             abs(obstacle.z - player.z) < 0.5 and  # Depth proximity
-            
+
             player.y < obstacle.y + obstacle.scale_y / 2 and  # Vertical proximity
             # Vertical proximity under
             player.y + player.scale_y / 2 > obstacle.y - obstacle.scale_y / 2
