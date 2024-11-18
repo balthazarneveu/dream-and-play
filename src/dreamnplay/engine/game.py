@@ -7,6 +7,7 @@ class Game:
         self.HEIGHT = height
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.controller = controller
+        self.running = True
 
     def process_motion(self):
         raise NotImplementedError
