@@ -31,7 +31,6 @@ class VerticalPongGame(Game):
 
         pygame.display.set_caption("Vertical Pong Game")
         self.font = pygame.font.Font(None, 36)
-        self.clock = pygame.time.Clock()
 
     def draw_objects(self):
         # Background
@@ -130,8 +129,7 @@ class VerticalPongGame(Game):
     def process_motion(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                self.release_resources()
 
         if self.controller and self.controller.current_position is not None:
             # Map controller positions to the player's paddle

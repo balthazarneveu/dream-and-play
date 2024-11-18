@@ -1,4 +1,5 @@
 import pygame
+import sys
 
 
 class Game:
@@ -8,6 +9,7 @@ class Game:
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.controller = controller
         self.running = True
+        self.clock = pygame.time.Clock()
 
     def process_motion(self):
         raise NotImplementedError
@@ -17,3 +19,7 @@ class Game:
 
     def game_over(self):
         raise NotImplementedError
+
+    def release_resources(self):
+        pygame.quit()
+        sys.exit()

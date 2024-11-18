@@ -15,11 +15,10 @@ class RunnableGame:
             self.controller.process_webcam()
             self.game.process_motion()
             self.game.update()
-            display_control_mode(self.game.controller, self.game.screen,
-                                 self.game.WIDTH, self.game.HEIGHT)
+            if self.game.running:
+                display_control_mode(self.game.controller, self.game.screen,
+                                     self.game.WIDTH, self.game.HEIGHT)
             pygame.display.flip()
             self.game.clock.tick(30)
         self.controller.release_resources()
-        self.game.game_over()
-        pygame.quit()
-        sys.exit()
+        self.game.release_resources()

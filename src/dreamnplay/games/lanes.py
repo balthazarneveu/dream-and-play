@@ -16,16 +16,13 @@ class ThreeLaneGame(Game):
         self.PLAYER_START_Y = self.HEIGHT - 80
         self.PLAYER_START_X = self.LANE_WIDTH // 2 - self.PLAYER_WIDTH // 2
 
-        
         pygame.display.set_caption("3-Lane Jumping Game")
         self.font = pygame.font.Font(None, 36)
-        self.clock = pygame.time.Clock()
 
         self.player_lane = 1
         self.player_x = self.PLAYER_START_X
         self.holes = []
         self.score = 0
-        self.running = True
 
     def create_hole(self):
         lane = random.randint(0, 2)
@@ -99,10 +96,10 @@ class ThreeLaneGame(Game):
         score_text = self.font.render(
             f"Score: {self.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (10, 10))
+        if not self.running:
+            self.game_over()
 
     def game_over(self):
-        self.running = False
-
         self.screen.fill((0, 0, 0))
         game_over_text = self.font.render("Game Over!", True, (255, 0, 0))
         final_score_text = self.font.render(
