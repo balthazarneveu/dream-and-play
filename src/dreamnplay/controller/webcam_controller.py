@@ -8,21 +8,26 @@ mp_pose = mp.solutions.pose
 
 
 class Controller:
-    def __init__(self, webcam_show: bool = False):
+    def __init__(self, webcam_show: bool = False, allow_hand_control: bool = True, allow_body_control: bool = True):
+        self.allow_body_control = allow_body_control
+        self.allow_hand_control = allow_hand_control
+        assert allow_hand_control or allow_body_control, "At least one control mode must be enabled."
         self.frame_count = 0
         # Initialize MediaPipe hands and pose
-        self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(
-            static_image_mode=False,
-            max_num_hands=1,
-            min_detection_confidence=0.7,
-            min_tracking_confidence=0.7
-        )
-        self.mp_pose = mp.solutions.pose
-        self.pose = self.mp_pose.Pose(
-            static_image_mode=False,
-            min_detection_confidence=0.7
-        )
+        if allow_hand_control:
+            self.mp_hands = mp.solutions.hands
+            self.hands = self.mp_hands.Hands(
+                static_image_mode=False,
+                max_num_hands=1,
+                min_detection_confidence=0.7,
+                min_tracking_confidence=0.7
+            )
+        if allow_body_control:
+            self.mp_pose = mp.solutions.pose
+            self.pose = self.mp_pose.Pose(
+                static_image_mode=False,
+                min_detection_confidence=0.7
+            )
 
         # OpenCV webcam setup
         self.cap = cv2.VideoCapture(0)
@@ -52,22 +57,23 @@ class Controller:
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Hand detection
-            results_hands = self.hands.process(rgb_frame)
-            if results_hands.multi_hand_landmarks:
-                for hand_landmarks in results_hands.multi_hand_landmarks:
-                    index_finger_tip = hand_landmarks.landmark[8]
-                    wrist = hand_landmarks.landmark[0]
-                    hand_position = index_finger_tip.x
-                    self.hand_size = ((index_finger_tip.x - wrist.x) ** 2 +
-                                      (index_finger_tip.y - wrist.y) ** 2) ** 0.5
-                    self.hand_control = self.hand_size > 0.2
-                    if self.hand_control:
-                        self.current_position = hand_position
-                    if self.webcam_show:
-                        mp_draw.draw_landmarks(frame, hand_landmarks,
-                                               mp_hands.HAND_CONNECTIONS)
+            if self.allow_hand_control:
+                results_hands = self.hands.process(rgb_frame)
+                if results_hands.multi_hand_landmarks:
+                    for hand_landmarks in results_hands.multi_hand_landmarks:
+                        index_finger_tip = hand_landmarks.landmark[8]
+                        wrist = hand_landmarks.landmark[0]
+                        hand_position = index_finger_tip.x
+                        self.hand_size = ((index_finger_tip.x - wrist.x) ** 2 +
+                                          (index_finger_tip.y - wrist.y) ** 2) ** 0.5
+                        self.hand_control = self.hand_size > 0.2
+                        if self.hand_control:
+                            self.current_position = hand_position
+                        if self.webcam_show:
+                            mp_draw.draw_landmarks(frame, hand_landmarks,
+                                                   mp_hands.HAND_CONNECTIONS)
 
-            if not self.hand_control:
+            if not self.hand_control and self.allow_body_control:
                 # Body detection
                 results_pose = self.pose.process(rgb_frame)
                 if results_pose.pose_landmarks:
