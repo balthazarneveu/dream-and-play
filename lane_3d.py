@@ -1,14 +1,43 @@
 from dreamnplay.controller.webcam_controller import Controller
 from ursina import *
 from random import choice, randint
-
+from ursina.shaders import lit_with_shadows_shader
 app = Ursina()
+
+LIGHTING = True
+if LIGHTING:
+    # Light source for shadows
+    light = DirectionalLight()
+    light.look_at(Vec3(-1, -2.5, 10))  # Position the light to cast shadows
+    light.shadows = True  # Enable shadows
+    AmbientLight(color=color.rgba(255, 255, 255, 0.1))
+    current_shader = lit_with_shadows_shader
+else:
+    current_shader = None
+
+
+GROUND = -2.5  # Ground level
 
 # Player setup
 PLAYER_STANDARD_SCALE = 0.5
-GROUND = -2.5  # Ground level
-player = Entity(model='cube', color=color.orange,
-                scale=(0.5, PLAYER_STANDARD_SCALE, 0.5), position=(0, 5, -15))
+PLAYER_RESCALE = 1.
+
+
+if True:
+    player = Entity(model='cube', color=color.orange,
+                    scale=(0.5, PLAYER_STANDARD_SCALE*PLAYER_RESCALE, 0.5),
+                    position=(0, 5, -15),
+                    shader=current_shader)
+else:
+    PLAYER_RESCALE = 0.01
+    player = Entity(
+        # model='__bunny/bunny_obj.obj',  # Use a monkey head model for fun
+        model='__bunny/Bunny.obj',
+        # material='__bunny/Bunny.mtl',
+        scale=PLAYER_STANDARD_SCALE*PLAYER_RESCALE,
+        position=(0, 5, -15)
+    )
+
 player_velocity = -0.1  # For initial fall
 is_falling = True  # Start the game with a fall
 
@@ -34,7 +63,8 @@ def create_lanes():
                     color=color.azure,
                     # Extend the length of each lane block
                     scale=(0.97, lane_thickness, 3),
-                    position=(lane, GROUND - lane_thickness/2, z_pos)
+                    position=(lane, GROUND - lane_thickness/2, z_pos),
+                    shader=current_shader
                 )
                 lane_blocks.append(lane_block)
         z_pos += 3  # Increase distance between blocks to give time for jumps
@@ -68,7 +98,8 @@ def create_obstacle():
         color=color.magenta if size == 'small' else color.red if size == 'tall' else color.violet,
         scale=(0.5, height, 0.5),  # Adjust height
         # Position the obstacle properly on the ground
-        position=(lane, GROUND + offset + height / 2, 20)
+        position=(lane, GROUND + offset + height / 2, 20),
+        shader=current_shader
     )
     obstacle.size = size  # Store the size for collision logic
     obstacles.append(obstacle)
@@ -147,13 +178,13 @@ def update():
 
     # Crouching
     if held_keys['down arrow']:
-        new_scale_y = 0.25  # Crouching scale
+        new_scale_y = PLAYER_STANDARD_SCALE*PLAYER_RESCALE/2.  # Crouching scale
         if player.scale_y != new_scale_y:  # Only adjust if the scale changes
             # Adjust y-position to keep feet on the ground
             player.y -= (player.scale_y - new_scale_y) / 2
         player.scale_y = new_scale_y  # Shrink player for crouch
     else:
-        new_scale_y = 0.5  # Normal scale
+        new_scale_y = PLAYER_STANDARD_SCALE*PLAYER_RESCALE  # Normal scale
         if player.scale_y != new_scale_y:  # Only adjust if the scale changes
             # Adjust y-position to keep feet on the ground
             player.y += (new_scale_y - player.scale_y) / 2
@@ -199,7 +230,7 @@ def update():
             score.text = f"Score: {points}"
 
         # Remove obstacles that go off-screen
-        if obstacle.z < -20:
+        if obstacle.z < -40:
             obstacles.remove(obstacle)
             destroy(obstacle)
 
