@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from transformers.modeling_outputs import MaskedLMOutput
 
-from model.movedect_utils import MoveEncoderPoint, MoveEncoderPose
+from dreamnplay.detection.model.movedect_utils import MoveEncoderPoint, MoveEncoderPose
 
 
 TIMEFRAMES = 20 # 10 fps
