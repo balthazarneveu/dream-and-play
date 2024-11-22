@@ -91,7 +91,7 @@ while True:
     all_kps = all_kps[1:]
     while (keypoint := get_keypoint(webcame_controller)) is None:
         pass
-
+    e = time.time()
     keypoint["time"] = e - t
     all_kps.append(keypoint)
 
