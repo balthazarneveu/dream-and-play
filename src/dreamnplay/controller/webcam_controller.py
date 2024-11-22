@@ -1,10 +1,12 @@
 import sys
-import pygame
 import cv2
 import mediapipe as mp
+import time
+from dreamnplay.controller.motion_detection import Detector
 mp_draw = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 mp_pose = mp.solutions.pose
+keypoints_names = [e for e in mp.solutions.pose.PoseLandmark]
 
 
 class Controller:
@@ -13,6 +15,8 @@ class Controller:
         self.allow_hand_control = allow_hand_control
         assert allow_hand_control or allow_body_control, "At least one control mode must be enabled."
         self.frame_count = 0
+
+        self.motion_detector = Detector()
         # Initialize MediaPipe hands and pose
         if allow_hand_control:
             self.mp_hands = mp.solutions.hands
@@ -43,6 +47,7 @@ class Controller:
         self.body_control = False
         self.webcam_show = webcam_show
         self.current_position = None
+        self.current_action = None
 
     def process_webcam(self):
         """Process webcam input to detect hands or body."""
@@ -77,10 +82,26 @@ class Controller:
                 # Body detection
                 results_pose = self.pose.process(rgb_frame)
                 if results_pose.pose_landmarks:
+
                     nose = results_pose.pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.NOSE]
                     # Body control only if hand control is inactive
                     self.body_control = not self.hand_control
                     self.current_position = nose.x
+                    current_time = time.time()
+
+                    positions = {
+                        keypoint_name.name: results_pose.pose_landmarks.landmark[keypoint_name]
+                        for keypoint_name in keypoints_names
+                    }
+
+                    converted_positions = {
+                        keypoint_name: (position.x, position.y,
+                                        position.z, position.visibility)
+                        for keypoint_name, position in positions.items()
+                    }
+                    self.motion_detector.infer_action(
+                        converted_positions, current_time)
+                    self.current_action = self.motion_detector.current_action
                     if self.webcam_show:
                         mp_draw.draw_landmarks(frame, results_pose.pose_landmarks,
                                                mp_pose.POSE_CONNECTIONS)

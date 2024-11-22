@@ -175,11 +175,11 @@ def update():
         if held_keys['right arrow']:
             player.x = min(player.x + 0.1, 1)
     # Jumping
-    if held_keys['space'] and player.y <= -2:  # Allow jump only if player is on the ground
+    if (controller.current_action == "JUMP" or held_keys['space']) and player.y <= -2:  # Allow jump only if player is on the ground
         player_velocity = 0.25  # Stronger upward velocity for longer jumps
 
     # Crouching
-    if held_keys['down arrow']:
+    if controller.current_action == "CROUCH" or held_keys['down arrow']:
         new_scale_y = PLAYER_STANDARD_SCALE*PLAYER_RESCALE/2.  # Crouching scale
         if player.scale_y != new_scale_y:  # Only adjust if the scale changes
             # Adjust y-position to keep feet on the ground
