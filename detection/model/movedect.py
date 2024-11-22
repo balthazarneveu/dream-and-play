@@ -3,13 +3,14 @@ import torch.nn as nn
 
 from transformers.modeling_outputs import MaskedLMOutput
 
-from movedect_utils import MoveEncoderPoint, MoveEncoderPose
+from model.movedect_utils import MoveEncoderPoint, MoveEncoderPose
 
 
 TIMEFRAMES = 20 # 10 fps
 N_COORDS = 2
 N_POINTS = 50
 N_CLASSES = 5
+N_POSE_FEATURES = 33*3
 
 class TransformerForPointMoveDetection(nn.Module):
 
@@ -26,7 +27,7 @@ class TransformerForPointMoveDetection(nn.Module):
         self.n_coords = n_coords
         self.n_points = n_points
 
-        self.move_encoder = MoveEncoder(embed_size, num_layers, heads, forward_expansion, dropout, timeframes,
+        self.move_encoder = MoveEncoderPoint(embed_size, num_layers, heads, forward_expansion, dropout, timeframes,
                   n_coords, n_points)
 
         self.decoder = nn.Linear(embed_size, n_classes)
@@ -63,7 +64,8 @@ class TransformerForPoseMoveDetection(nn.Module):
     A transformer-based model for ...
     """
 
-    def __init__(self, embed_size, num_layers, heads, forward_expansion, dropout, n_pose_features, n_classes = N_CLASSES):
+    def __init__(self, embed_size, num_layers, heads, forward_expansion=4, 
+                 dropout = 0.1, n_pose_features = N_POSE_FEATURES, n_classes = N_CLASSES):
 
         super(TransformerForPoseMoveDetection, self).__init__()
 
@@ -80,6 +82,7 @@ class TransformerForPoseMoveDetection(nn.Module):
         labels: torch.Tensor of shape (batch_size), vector of move (collection of frames) labels
         pose_features: torch.Tensor of shape (batch_size, n_pose, n_pose_features), tensor of features of each
         pose in the move
+        positions: torch.Tensor of shape (batch_size, n_pose), vector of time positions of each pose
         attention_mask: torch.Tensor of shape (batch_size, n_pose), mask for non visible points
         """
         
@@ -90,7 +93,8 @@ class TransformerForPoseMoveDetection(nn.Module):
 
         output = self.decoder(pose_embeddings) # (B, n_classes)
         
-        loss = self.criterion(output, labels)
+        if labels is not None:
+            loss = self.criterion(output, labels)
 
         return MaskedLMOutput(loss = loss,
                               logits = output,
@@ -113,7 +117,7 @@ if __name__ == '__main__':
 
     # for pose level pose encoding
     n_pose = 39
-    n_pose_features = 34*3 # 34 joints with 3 coordinates each
+    n_pose_features = 33*3 # 34 joints with 3 coordinates each
     labels = torch.randint(0, N_CLASSES, (batch_size,))
     pose_features = torch.randn(batch_size, n_pose, n_pose_features)
     positions = torch.randn(batch_size, n_pose)

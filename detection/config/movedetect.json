@@ -1,0 +1,21 @@
+{
+    "name": "config_movedetect",
+    "description": "Configuration file for move detection",
+    "datafile": "data/csv_files_converted",
+    "batch_size": 256,
+    "dev_ratio": 0.15,
+    "seed": 42,
+    "embed_size": 64,
+    "num_layers": 1,
+    "num_heads": 2,
+    "output_dir": "outputs/move_detection",
+    "num_train_epochs": 500,
+    "learning_rate": 0.0001,
+    "warmup_ratio": 0,
+    "evaluation_strategy": "steps",
+    "eval_steps": 128,
+    "logging_strategy": "steps",
+    "logging_steps": 128,
+    "save_strategy": "steps",
+    "save_steps": 50000
+}
