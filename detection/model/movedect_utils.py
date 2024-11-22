@@ -1,11 +1,33 @@
 import torch
 import torch.nn as nn
+import numpy as np
 
-class PointsSelfAttention(nn.Module):
+
+def sinusoidal_positional_encoding(positions, d_model):
+
+    """
+    positions: torch.Tensor of shape (batch_size, seq_len), the positions to encode
+    d_model: int, the dimension of the model
+    """
+    
+    seq_len = positions.shape[1]
+    # Fréquences définies par la dimension du modèle [1, d_model]
+    div_term = torch.exp(torch.arange(0, d_model, 2) * -(torch.log(torch.tensor(10000.0)) / d_model))
+    
+    positions = positions.unsqueeze(-1)  # (batch_size, seq_len, 1)
+
+    # Calcul des encodages sinusoïdaux
+    sinusoidal_encoding = torch.zeros((positions.shape[0], positions.shape[1], d_model))  # (batch_size, seq_len, d_model)
+    sinusoidal_encoding[:, :, 0::2] = torch.sin(positions * div_term)  # Sinus sur les indices pairs
+    sinusoidal_encoding[:, :, 1::2] = torch.cos(positions * div_term)  # Cosinus sur les indices impairs
+
+    return sinusoidal_encoding
+
+class SelfAttention(nn.Module):
     
     def __init__(self, embed_size, heads):
     
-        super(PointsSelfAttention, self).__init__()
+        super(SelfAttention, self).__init__()
         
         self.embed_size = embed_size
         self.heads = heads
@@ -53,7 +75,7 @@ class MoveTransformerBlock(nn.Module):
         
         super(MoveTransformerBlock, self).__init__()
         
-        self.attention = PointsSelfAttention(embed_size, heads)
+        self.attention = SelfAttention(embed_size, heads)
         self.norm1 = nn.LayerNorm(embed_size)
         self.norm2 = nn.LayerNorm(embed_size)
         self.feed_forward = nn.Sequential(
@@ -73,12 +95,12 @@ class MoveTransformerBlock(nn.Module):
         return out, attention_matrix
 
 
-class MoveEncoder(nn.Module):
+class MoveEncoderPoint(nn.Module):
     
     def __init__(self, embed_size, num_layers, heads, forward_expansion, dropout, timeframes,
                   n_coords, n_points):
 
-        super(MoveEncoder, self).__init__()
+        super(MoveEncoderPoint, self).__init__()
 
         self.embed_size = embed_size
         self.timeframes = timeframes
@@ -96,6 +118,8 @@ class MoveEncoder(nn.Module):
 
     def forward(self, point_id, coords, attention_mask):
 
+        # generate time ids: shape [batch_size, n_points*timeframes] 
+        # each row in the format [0, 1, 2, ..., timeframes-1, 0, 1, 2, ..., timeframes-1, ...]
         out = self.dropout(self.relu(self.points_embeddings(point_id))+\
                             self.coords_embeddings(coords)
                             )
@@ -106,3 +130,45 @@ class MoveEncoder(nn.Module):
             attention_matrices.append(attention_matrix)
 
         return out, attention_matrices
+
+class MoveEncoderPose(nn.Module):
+    
+    def __init__(self, embed_size, num_layers, heads, forward_expansion, dropout,
+                  n_pose_features):
+
+        super(MoveEncoderPose, self).__init__()
+
+        self.embed_size = embed_size
+        
+        self.pose_features_embeddings = nn.Linear(n_pose_features, embed_size)
+        
+        self.layers = nn.ModuleList([MoveTransformerBlock(embed_size, heads, dropout, forward_expansion)
+                                     for _ in range(num_layers)])
+
+        self.dropout = nn.Dropout(dropout)
+        self.relu = nn.ReLU()
+
+    def forward(self, pose_features, positions, attention_mask):
+
+        # generate time ids: shape [batch_size, n_points*timeframes] 
+        # each row in the format [0, 1, 2, ..., timeframes-1, 0, 1, 2, ..., timeframes-1, ...]
+        positions -= positions[:, -1].unsqueeze(1)
+        out = self.dropout(self.pose_features_embeddings(pose_features)+\
+                           sinusoidal_positional_encoding(positions, self.embed_size)
+                            )
+
+        attention_matrices = []
+        for layer in self.layers:
+            out, attention_matrix = layer(out, out, out, attention_mask)
+            attention_matrices.append(attention_matrix)
+
+        return out, attention_matrices
+    
+if __name__ == "__main__":
+    # Exemple d'utilisation
+    batch_size = 8
+    positions = torch.randn(batch_size, 39)
+    d_model = 64  # Dimension du modèle
+    positional_encodings = sinusoidal_positional_encoding(positions, d_model)
+    print(positional_encodings.shape)  # (50, 128)
+
