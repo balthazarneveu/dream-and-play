@@ -79,7 +79,8 @@ class Controller:
     def process_webcam(self, action):
         """Process webcam input to detect hands or body."""
 
-        if self.frame_count % 3 == 0:
+        # if self.frame_count % 3 == 0:
+        if True:
             # Reset control flags
             self.hand_control = False
             self.body_control = False

@@ -55,25 +55,25 @@ if __name__ == "__main__":
 
     keypoints_names = [e for e in mp.solutions.pose.PoseLandmark]
 
-    actions = ["JUMP", "CROUCH", "ACTIVATE", "IDLE", "LEFT_STEP", "RIGHT_STEP", "SHAKE"]
-
-    all_dataframes = []
+    # actions = ["JUMP", "CROUCH", "ACTIVATE", "IDLE", "LEFT_STEP", "RIGHT_STEP", "SHAKE"]
+    actions = ["ACTIVATE",]
+    all_keypoints = []
     try:
         start_time = time.time()
         while time.time() - start_time < 60.:
             # Select action
             action = random.choice(actions)
 
-            keypoints = process_action(
-                webcame_controller,
-                action,
-                0.3,
-                display_info=True,
-                start_time=start_time,
-            )
-            if keypoints is not None:
-                df = pd.DataFrame(keypoints)
-                all_dataframes.append(df)
+            # keypoints = process_action(
+            #     webcame_controller,
+            #     action,
+            #     0.3,
+            #     display_info=True,
+            #     start_time=start_time,
+            # )
+            # if keypoints is not None:
+            #     df = pd.DataFrame(keypoints)
+            #     all_dataframes.append(df)
 
             # Record
             total_time_second = 1.3 if action == "JUMP" else 3
@@ -84,10 +84,11 @@ if __name__ == "__main__":
                 start_time=start_time,
             )
 
+            if keypoints:
+                all_keypoints.extend(keypoints)
+
             # Save action
-            if keypoints is not None:
-                df = pd.DataFrame(keypoints)
-                all_dataframes.append(df)
+            df = pd.DataFrame(all_keypoints)
 
     except KeyboardInterrupt:
         print("stopping recording")
@@ -95,4 +96,4 @@ if __name__ == "__main__":
 
     date = datetime.datetime.utcnow()
     date = date.strftime("%Y-%m-%d-%H-%M-%S.%f")[:-3]
-    pd.concat(all_dataframes).to_csv(f"{date}.csv", index=False)
+    df[(df["relative_time"] > 5) & (df["relative_time"] < (df["relative_time"].iloc[-1] - 5))].to_csv(f"{date}.csv", index=False)
