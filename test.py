@@ -14,7 +14,7 @@ keypoints_names = [e for e in mp.solutions.pose.PoseLandmark]
 model = TransformerForPoseMoveDetection(embed_size=64, num_layers=1, heads=2).eval()
 model.load_state_dict(
     safetensors.torch.load_file(
-        "/home/victor/Documents/hackaton/dream-and-play/ckpts/checkpoint-22000/model.safetensors"
+        "checkpoint-27500-500epochs/model.safetensors"
     )
 )
 
@@ -103,7 +103,9 @@ while True:
 
     with torch.no_grad():
         res = model(None, pos, ts, None)
-        res = res[0].argmax().item()
+        res = res.logits
+        index = res[0].argmax().item()
+
 
     # display label
-    print(i, labels2actions[res])
+    print(i, labels2actions[index], res)
