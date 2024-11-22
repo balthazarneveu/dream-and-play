@@ -37,7 +37,6 @@ def convert_input(all_kps):
 
     return positions, ts
 
-
 class Detector():
     def __init__(self):
         self.model = TransformerForPoseMoveDetection(
@@ -51,7 +50,7 @@ class Detector():
         self.all_kps = []
         self.current_action = None
 
-    def infer_action(self, keypoint, capture_time):
+    def infer_action(self, keypoint, capture_time=None):
         keypoint["time"] = capture_time - self.start_time
         self.all_kps.append(keypoint)
         context_length = 39*2
