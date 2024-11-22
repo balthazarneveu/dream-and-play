@@ -152,7 +152,10 @@ class MoveEncoderPose(nn.Module):
 
         # generate time ids: shape [batch_size, n_points*timeframes] 
         # each row in the format [0, 1, 2, ..., timeframes-1, 0, 1, 2, ..., timeframes-1, ...]
-        positions -= positions[:, -1].unsqueeze(1)
+        print(positions.shape)
+        sub = positions[:, -1].unsqueeze(-1)
+        positions = positions - sub 
+        print(positions.shape)
         out = self.dropout(self.pose_features_embeddings(pose_features)+\
                            sinusoidal_positional_encoding(positions, self.embed_size)
                             )
@@ -166,7 +169,7 @@ class MoveEncoderPose(nn.Module):
     
 if __name__ == "__main__":
     # Exemple d'utilisation
-    batch_size = 8
+    batch_size = 1
     positions = torch.randn(batch_size, 39)
     d_model = 64  # Dimension du modèle
     positional_encodings = sinusoidal_positional_encoding(positions, d_model)
