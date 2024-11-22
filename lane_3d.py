@@ -24,7 +24,8 @@ PLAYER_RESCALE = 1.
 
 
 if True:
-    player = Entity(model='cube', color=color.orange,
+    player = Entity(model='cube',
+                    color=color.orange,
                     scale=(0.5, PLAYER_STANDARD_SCALE*PLAYER_RESCALE, 0.5),
                     position=(0, 5, -15),
                     shader=current_shader)
@@ -60,9 +61,10 @@ def create_lanes():
                 lane_thickness = 0.1
                 lane_block = Entity(
                     model='cube',
-                    color=color.azure,
+                    color=color.rgb(
+                        randint(0, 255)/255., randint(0, 255)/255., randint(0, 255)/255.),
                     # Extend the length of each lane block
-                    scale=(0.97, lane_thickness, 3),
+                    scale=(0.97, lane_thickness, 2.97),
                     position=(lane, GROUND - lane_thickness/2, z_pos),
                     shader=current_shader
                 )
