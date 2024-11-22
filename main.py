@@ -60,7 +60,7 @@ if __name__ == "__main__":
     all_dataframes = []
     try:
         start_time = time.time()
-        while True:
+        while time.time() - start_time < 60.:
             # Select action
             action = random.choice(actions)
 
@@ -76,11 +76,11 @@ if __name__ == "__main__":
                 all_dataframes.append(df)
 
             # Record
-            total_time_second = 1 if action == "JUMP" else 3
+            total_time_second = 1.3 if action == "JUMP" else 3
             keypoints = process_action(
                 webcame_controller,
                 action,
-                min(0.8 + random.random() * 2, total_time_second),
+                min(1.3 + random.random() * 2, total_time_second),
                 start_time=start_time,
             )
 
@@ -94,5 +94,5 @@ if __name__ == "__main__":
         pass
 
     date = datetime.datetime.utcnow()
-    date = date.strftime("%Y-%m-%d-%H-%M-%S")
+    date = date.strftime("%Y-%m-%d-%H-%M-%S.%f")[:-3]
     pd.concat(all_dataframes).to_csv(f"{date}.csv", index=False)
