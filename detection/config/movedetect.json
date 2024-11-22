@@ -17,5 +17,5 @@
     "logging_strategy": "steps",
     "logging_steps": 128,
     "save_strategy": "steps",
-    "save_steps": 50000
+    "save_steps": 5500
 }
