@@ -9,6 +9,7 @@ from dreamnplay.training.model import MLPBaseline, WINDOW_SIZE
 keypoints_names = [e for e in mp.solutions.pose.PoseLandmark]
 labels2actions = {v: k for k, v in CLASSES_NAMES.items()}
 
+
 def process_keypoints_list(keypoints_list):
     positions = []
     for keypoints in keypoints_list:
@@ -17,6 +18,7 @@ def process_keypoints_list(keypoints_list):
             positions.extend([x, y, z, v])
 
     return torch.tensor(positions)
+
 
 class DetectorBaseline():
     def __init__(self):
@@ -46,7 +48,7 @@ class DetectorBaseline():
             res = torch.softmax(res, dim=-1)
             index = res[0].argmax().item()
             action = labels2actions[index]
-        if action == "ACTIVATE":
+        if action == "JUMP":
             self.current_action = "JUMP"
         elif action == "CROUCH":
             self.current_action = "CROUCH"
