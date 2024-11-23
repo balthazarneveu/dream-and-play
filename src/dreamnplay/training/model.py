@@ -20,3 +20,23 @@ class MLPBaseline(torch.nn.Module):
         x = torch.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+
+
+if __name__ == '__main__':
+    batch_size = 1
+
+    from torch.export import export
+    from executorch.exir import to_edge
+
+    model = MLPBaseline()
+    model.load_state_dict(torch.load("mlpbaseline_model.pth"))
+    pose_features = torch.randn(batch_size, WINDOW_SIZE, POSITION_DIM)
+    with torch.no_grad():
+        output = model(pose_features)
+        aten_dialect = export(model, (pose_features,))
+        print(
+            f"output.shape: {output.shape}")
+        edge_program = to_edge(aten_dialect)
+        executorch_program = edge_program.to_executorch()
+        with open("mlp_fixed.pte", "wb") as file:
+            file.write(executorch_program.buffer)
