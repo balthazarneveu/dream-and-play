@@ -26,7 +26,10 @@ class PoseDataset(Dataset):
     def __getitem__(self, idx):
         # output sequence of length context_length
         # -> position (x, y, z, v) , timestep, label
-        return self.data[idx:idx+self.context_length], self.times[idx:idx+self.context_length], self.labels[idx:idx+self.context_length]
+        positions = self.data[idx:idx+self.context_length]
+        timesteps = self.times[idx:idx+self.context_length]
+        labels = self.labels[idx+self.context_length-1]
+        return torch.tensor(positions), torch.tensor(timesteps), labels
 
 
 def get_dataloader(path=Path("__data"), batch_size=32):
@@ -36,6 +39,9 @@ def get_dataloader(path=Path("__data"), batch_size=32):
     dataset_mixed = ConcatDataset(datasets)
     train_set, valid_set = random_split(
         dataset_mixed, [0.8, 0.2], generator=rng)
+    # print(datasets[0][0][1])
+    # print(dataset_mixed[0][1])
+    # print(train_set[0][1])
     train_dataloader = DataLoader(
         train_set, batch_size=batch_size, shuffle=True)
     valid_dataloader = DataLoader(
@@ -47,5 +53,6 @@ if __name__ == "__main__":
     train_dataloader, valid_dataloader = get_dataloader()
     # Example usage
     for batch_data, batch_time, batch_labels in train_dataloader:
+        print(batch_data.shape, batch_time.shape)
         print(batch_time[0], batch_labels)
         break
