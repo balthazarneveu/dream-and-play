@@ -46,7 +46,7 @@ def compute_metrics_v2(eval_pred):
         acc_per_label.append((pred_classes[idx]==labels[idx]).mean())
 
     # compute the model top 1 accuracy
-    accuracy = (labels==pred_classes).mean()
+    accuracy = (labels[labels!=-100]==pred_classes[labels!=-100]).mean()
 
     outputs = {'accuracy': accuracy,
                'accuracy_nothing': acc_per_label[0],
