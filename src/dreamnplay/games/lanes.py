@@ -11,8 +11,8 @@ class ThreeLaneGame(Game):
         self.LANE_WIDTH = self.WIDTH // 3
         self.HOLE_HEIGHT = 50
         self.SPEED = 5
-        self.PLAYER_WIDTH = 30
-        self.PLAYER_HEIGHT = 30
+        self.PLAYER_WIDTH = 100
+        self.PLAYER_HEIGHT = 200
         self.PLAYER_START_Y = self.HEIGHT - 80
         self.PLAYER_START_X = self.LANE_WIDTH // 2 - self.PLAYER_WIDTH // 2
 

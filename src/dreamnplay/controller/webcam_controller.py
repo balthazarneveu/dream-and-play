@@ -88,7 +88,7 @@ class Controller:
                 # Body detection
                 results_pose = self.pose.process(rgb_frame)
                 if results_pose.pose_landmarks:
-
+                    
                     nose = results_pose.pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.NOSE]
                     # Body control only if hand control is inactive
                     self.body_control = not self.hand_control
@@ -105,6 +105,7 @@ class Controller:
                                         position.z, position.visibility)
                         for keypoint_name, position in positions.items()
                     }
+                    # print(results_pose.pose_landmarks)
                     self.motion_detector.infer_action(
                         converted_positions, capture_time=current_time)
                     self.current_action = self.motion_detector.current_action
@@ -116,6 +117,8 @@ class Controller:
                 cv2.waitKey(1)
         self.frame_count += 1
         return
+
+
 
     def release_resources(self):
         """Release webcam and cleanup resources."""

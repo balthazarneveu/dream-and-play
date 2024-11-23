@@ -22,13 +22,17 @@ GROUND = -2.5  # Ground level
 PLAYER_STANDARD_SCALE = 0.5
 PLAYER_RESCALE = 1.
 
+COLLISION = 20 # collision cooldown
+collision_cooldown = 0
 
 if True:
     player = Entity(model='cube',
-                    color=color.orange,
+                    color=color.green,
                     scale=(0.5, PLAYER_STANDARD_SCALE*PLAYER_RESCALE, 0.5),
                     position=(0, 5, -15),
                     shader=current_shader)
+
+
 else:
     PLAYER_RESCALE = 0.01
     player = Entity(
@@ -51,8 +55,6 @@ score = Text(text="Score: 0", position=(-0.85, 0.45), scale=1.5)
 points = 0  # Player score
 
 # Function to create lanes with gaps
-
-
 def create_lanes():
     z_pos = -15  # Start lanes closer to the player
     for _ in range(40):  # Create 40 blocks initially (longer lanes)
@@ -72,7 +74,6 @@ def create_lanes():
         z_pos += 3  # Increase distance between blocks to give time for jumps
 
 
-# Call to create lanes initially
 create_lanes()
 
 # Obstacle setup
@@ -80,10 +81,10 @@ obstacles = []
 
 
 # Obstacle setup
-# Obstacle setup
 def create_obstacle():
     lane = choice(lane_positions)
     size = choice(['small', 'tall', 'low'])  # Add low obstacles
+    
     if size == 'small':
         height = 0.5  # Small obstacles (can be jumped over)
         offset = 0  # No offset for small obstacles
@@ -91,19 +92,22 @@ def create_obstacle():
         height = 2.5  # Tall obstacles (cannot be jumped over)
         offset = 0  # No offset for small obstacles
     elif size == 'low':
-        height = 3.  # Low obstacles (require crouching)
+        height = 0.3  # Low obstacles (require crouching)
         offset = 0.3  # No offset for small obstacles
 
     obstacle = Entity(
         model='cube',
-        # Different colors
-        color=color.magenta if size == 'small' else color.red if size == 'tall' else color.violet,
-        scale=(0.5, height, 0.5),  # Adjust height
-        # Position the obstacle properly on the ground
+        color=color.magenta if size == 'small' else color.red if size == 'tall' else color.yellow,
+        scale=(0.5 if size != 'low' else 1.5, height, 0.3),  # Adjust height
         position=(lane, GROUND + offset + height / 2, 20),
         shader=current_shader
     )
     obstacle.size = size  # Store the size for collision logic
+
+    # Randomly decide if this obstacle will move
+    if randint(0, 2) == 0:  # 1/4 chance to move
+        obstacle.direction = 1  # move right
+
     obstacles.append(obstacle)
 
 
@@ -128,7 +132,9 @@ def reset_player():
         nearest_lane = 0  # Default to the middle lane if no valid lanes are found
 
     # Reset player position to the nearest valid lane
-    player.position = (nearest_lane, GROUND + player.scale_y / 2, player.z)
+    # player.position = (nearest_lane, GROUND + player.scale_y / 2, player.z)
+    player.position = (player.x, GROUND + player.scale_y / 2, player.z)
+
     player_velocity = 0  # Reset velocity
     is_falling = False  # Stop falling
 
@@ -136,12 +142,16 @@ def reset_player():
 
 
 controller = Controller(
-    webcam_show=False, allow_hand_control=False, allow_body_control=True)
+    webcam_show=True, allow_hand_control=False, allow_body_control=True)
 
 
 def update():
-    global player_velocity, points, is_falling
+    global player_velocity, points, is_falling, collision_cooldown
 
+    points += 0.1
+    speed_multiplier = 1 + 0.5 * (points // 100)
+    score.text = f"Score: {int(points)}"
+    
     if is_falling:
         # If the player is falling, continue to move them downward
         player.y += player_velocity
@@ -204,6 +214,7 @@ def update():
             and abs(block.z - player.z) < 1.5
             for block in lane_blocks
         )
+        print(is_on_lane)
         if is_on_lane:
             player.y = -2.5 + player.scale_y / 2  # Adjust player to be on the ground
             player_velocity = 0
@@ -214,7 +225,20 @@ def update():
 
     # Move obstacles and check for collisions
     for obstacle in obstacles:
-        obstacle.z -= 0.1  # Move obstacle toward the player
+        if hasattr(obstacle, 'direction'):  # Check if it's a lane-moving obstacle
+            # Move toward the next lane
+            if obstacle.size != 'low':
+                obstacle.x += 0.05 * obstacle.direction  # Adjust speed as needed
+                # Check if the obstacle has reached the target lane
+                if abs(obstacle.x) >= 1:  # reach a border
+                    obstacle.direction *= -1
+            else:
+                obstacle.y += 0.07 * obstacle.direction  # Adjust speed as needed
+                # Check if the obstacle has reached the target lane
+                if abs(obstacle.y) >= 2.5 or abs(obstacle.y) <= 0.6:  # reach a border
+                    obstacle.direction *= -1
+                
+        obstacle.z -= 0.1 * speed_multiplier # Move obstacle toward the player
 
         # Check collision based on obstacle height
         if (
@@ -228,17 +252,23 @@ def update():
         ):
             print(
                 f"Hit an obstacle! (Height: {obstacle.scale_y}) Losing points.")
-            points -= 1
-            score.text = f"Score: {points}"
-
+            points = max(points-10, 1) # Avoid negative values
+            score.text = f"Score: {int(points)}"
+            player.color = color.red
+            collision_cooldown = COLLISION
         # Remove obstacles that go off-screen
         if obstacle.z < -40:
             obstacles.remove(obstacle)
             destroy(obstacle)
 
+    if collision_cooldown > 0:
+        collision_cooldown -= 1
+        if collision_cooldown == 0:
+            player.color = color.green
+    
     # Move lane blocks to simulate infinite scrolling
     for block in lane_blocks:
-        block.z -= 0.1
+        block.z -= 0.1 * speed_multiplier
         if block.z < -40:
             block.z += 120  # Recycle block to the end
 

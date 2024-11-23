@@ -51,5 +51,5 @@ class DetectorBaseline():
         elif action == "CROUCH":
             self.current_action = "CROUCH"
         else:
-            print("IDLE")
+            # print("IDLE")
             self.current_action = None
