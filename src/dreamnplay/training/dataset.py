@@ -1,5 +1,5 @@
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 import ast
 
 
@@ -29,14 +29,17 @@ class PoseDataset(Dataset):
 
 if __name__ == "__main__":
     # Paths to your 6 CSV files
-    csv_file = "__data/2024-11-22-23-37-29.147.csv"
+    csv_files = ["__data/2024-11-22-23-37-29.147.csv",
+                 "__data/2024-11-22-23-45-24.112.csv"]
     # Instantiate the Dataset and DataLoader
-    dataset = PoseDataset(csv_file)
-    print(dataset[0][1], dataset[1][1])
+    datasets = [PoseDataset(csv_file) for csv_file in csv_files]
 
-    # dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
+    print(datasets[0][1], datasets[1][1])
+    dataset_mixed = ConcatDataset(datasets)
+    print(dataset_mixed[0], dataset_mixed[-1])
+    dataloader = DataLoader(dataset_mixed, batch_size=32, shuffle=True)
 
     # # Example usage
-    # for batch_data, batch_labels in dataloader:
-    #     print(batch_data, batch_labels)
-    #     break
+    for batch_data, batch_time, batch_labels in dataloader:
+        print(batch_time, batch_labels)
+        break
