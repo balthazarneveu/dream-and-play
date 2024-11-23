@@ -6,9 +6,9 @@ import glob
 from transformers import Trainer, TrainingArguments
 from torch.utils.data import ConcatDataset, random_split
 
-from data.modelling import DataCollatorForPoseMoveDetection
-from model.movedect import  TransformerForPoseMoveDetection
-from utils import compute_metrics, count_parameters
+from data.modelling import DataCollatorForPoseMoveDetection, DataCollatorForPoseMoveDetectionV2
+from model.movedect import  TransformerForPoseMoveDetection, TransformerForPoseMoveDetectionV2
+from utils import compute_metrics, count_parameters, compute_metrics_v2
 
 config = json.load(open("config/movedetect.json", "r"))
 
@@ -21,7 +21,8 @@ files = glob.glob(datafile+'/*.csv')
 all_datasets = []
 for file in files:
     df_input = pd.read_csv(file)
-    all_datasets.append(DataCollatorForPoseMoveDetection(df_input))
+    #all_datasets.append(DataCollatorForPoseMoveDetection(df_input))
+    all_datasets.append(DataCollatorForPoseMoveDetectionV2(df_input))
 
 my_dataset = ConcatDataset(all_datasets[1:])
 # split the dataset 80/20
@@ -42,7 +43,10 @@ dev_size = int(dev_ratio*len(all_batches))
 
 #----------------- Load the model -----------------#
 embed_size, num_layers, num_heads = config["embed_size"], config["num_layers"], config["num_heads"]
-model = TransformerForPoseMoveDetection(embed_size=embed_size,
+#model = TransformerForPoseMoveDetection(embed_size=embed_size,
+#                                        num_layers=num_layers,
+#                                        heads=num_heads)
+model = TransformerForPoseMoveDetectionV2(embed_size=embed_size,
                                         num_layers=num_layers,
                                         heads=num_heads)
 
@@ -69,12 +73,19 @@ training_args = TrainingArguments(
     save_steps = save_steps,
 )
 
+#trainer = Trainer(
+#    model=model,
+#    args=training_args,
+#    train_dataset=train_dataset,
+#    eval_dataset=eval_dataset,
+#    compute_metrics=compute_metrics
+#)
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
-    compute_metrics=compute_metrics
+    compute_metrics=compute_metrics_v2
 )
 
 trainer.train()

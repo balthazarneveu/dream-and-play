@@ -30,6 +30,33 @@ def compute_metrics(eval_pred):
 
     return outputs
 
+def compute_metrics_v2(eval_pred):
+
+    model_output, labels = eval_pred 
+    pred, players_embeddings, attention_matrices = model_output 
+
+    # find the most likely predicted player
+    pred_classes = np.argmax(pred.reshape(-1, pred.shape[-1]), axis=1)
+    labels = labels.reshape(-1)
+
+    # compute accuracy per label, from 0 to 4
+    acc_per_label = []
+    for i in range(5):
+        idx = labels==i
+        acc_per_label.append((pred_classes[idx]==labels[idx]).mean())
+
+    # compute the model top 1 accuracy
+    accuracy = (labels==pred_classes).mean()
+
+    outputs = {'accuracy': accuracy,
+               'accuracy_nothing': acc_per_label[0],
+               'accuracy_activate': acc_per_label[1],
+               'accuracy_crouch': acc_per_label[2],
+               'accuracy_jump': acc_per_label[3],
+               'accuracy_shake': acc_per_label[4]}
+
+    return outputs
+
 def count_parameters(model, print_table = False):
 
     table = PrettyTable(["Modules", "Parameters"])

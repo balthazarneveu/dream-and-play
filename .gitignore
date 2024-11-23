@@ -1,3 +1,6 @@
+detection/data/csv_files/
+detection/outputs/move_detection/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

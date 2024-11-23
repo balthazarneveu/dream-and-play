@@ -93,8 +93,52 @@ class TransformerForPoseMoveDetection(nn.Module):
 
         output = self.decoder(pose_embeddings) # (B, n_classes)
         
+        loss = None
         if labels is not None:
             loss = self.criterion(output, labels)
+
+        return MaskedLMOutput(loss = loss,
+                              logits = output,
+                              hidden_states = pose_embeddings,
+                              attentions=attention_matrices)
+
+class TransformerForPoseMoveDetectionV2(nn.Module):
+
+    """ 
+    A transformer-based model for ...
+    """
+
+    def __init__(self, embed_size, num_layers, heads, forward_expansion=4, 
+                 dropout = 0.1, n_pose_features = N_POSE_FEATURES, n_classes = N_CLASSES):
+
+        super(TransformerForPoseMoveDetectionV2, self).__init__()
+
+        self.n_classes = n_classes
+
+        self.move_encoder = MoveEncoderPose(embed_size, num_layers, heads, forward_expansion, dropout, n_pose_features)
+
+        self.decoder = nn.Linear(embed_size, n_classes)
+
+        self.criterion = nn.CrossEntropyLoss(ignore_index = -100)
+
+    def forward(self, labels, pose_features, positions, attention_mask):
+
+        """
+        labels: torch.Tensor of shape (batch_size), vector of move (collection of frames) labels
+        pose_features: torch.Tensor of shape (batch_size, n_pose, n_pose_features), tensor of features of each
+        pose in the move
+        positions: torch.Tensor of shape (batch_size, n_pose), vector of time positions of each pose
+        attention_mask: torch.Tensor of shape (batch_size, n_pose), mask for non visible points
+        """
+        batch_size = pose_features.shape[0]
+
+        pose_embeddings, attention_matrices = self.move_encoder(pose_features, positions, attention_mask) #(B, N_poses, D)
+
+        output = self.decoder(pose_embeddings) # (B, n_classes)
+        
+        loss = None
+        if labels is not None:
+            loss = self.criterion(output.view(-1, self.n_classes), labels.view(-1))
 
         return MaskedLMOutput(loss = loss,
                               logits = output,
