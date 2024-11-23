@@ -2,7 +2,7 @@ import torch
 
 WINDOW_SIZE = 6
 POSITION_DIM = 132
-NUM_CLASSES = 4
+NUM_CLASSES = 3
 
 
 class MLPBaseline(torch.nn.Module):

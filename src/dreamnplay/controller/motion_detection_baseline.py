@@ -2,6 +2,9 @@ import safetensors.torch
 import mediapipe as mp
 import time
 import torch
+import mediapipe as mp
+NOSE = mp.solutions.pose.PoseLandmark.NOSE.name
+
 
 from dreamnplay.training.dataset import CLASSES_NAMES
 from dreamnplay.training.model import MLPBaseline, WINDOW_SIZE
@@ -40,6 +43,7 @@ class DetectorBaseline():
             self.current_action = None
             return
 
+
         # Convert to tensor
         positions = process_keypoints_list(self.all_kps).unsqueeze(0)
 
@@ -48,10 +52,21 @@ class DetectorBaseline():
             res = torch.softmax(res, dim=-1)
             index = res[0].argmax().item()
             action = labels2actions[index]
-        if action == "JUMP":
-            self.current_action = "JUMP"
-        elif action == "CROUCH":
+        
+        # window = 2
+        prev_kp = self.all_kps[-3]
+        prev_nose = prev_kp[NOSE]
+        curr_nose = keypoint[NOSE]
+        
+        # if action == "JUMP":
+            # self.current_action = "JUMP"
+        # print(curr_nose[1] - prev_nose[1])
+        if action == "CROUCH":
             self.current_action = "CROUCH"
+        elif action == "ACTIVATE":
+            self.current_action = "ACTIVATE"
+        elif (curr_nose[1] - prev_nose[1]) < -0.005*3.:
+            self.current_action = "JUMP"
         else:
-            print("IDLE")
+            # print("IDLE")
             self.current_action = None
