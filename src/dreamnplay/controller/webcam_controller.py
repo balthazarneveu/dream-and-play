@@ -12,7 +12,7 @@ keypoints_names = [e for e in mp.solutions.pose.PoseLandmark]
 
 
 class Controller:
-    def __init__(self, webcam_show: bool = False, allow_hand_control: bool = True, allow_body_control: bool = True,
+    def __init__(self, webcam_show: bool = True, allow_hand_control: bool = False, allow_body_control: bool = True,
                  heuristics=False):
         self.allow_body_control = allow_body_control
         self.allow_hand_control = allow_hand_control
@@ -58,7 +58,8 @@ class Controller:
     def process_webcam(self):
         """Process webcam input to detect hands or body."""
 
-        if self.frame_count % 3 == 0:
+        # if self.frame_count % 3 == 0:
+        if True:
             # Reset control flags
             self.hand_control = False
             self.body_control = False
