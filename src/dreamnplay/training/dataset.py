@@ -1,5 +1,6 @@
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader, ConcatDataset
+from torch.utils.data import Dataset, DataLoader, ConcatDataset, random_split
+import torch
 from pathlib import Path
 import ast
 
@@ -29,16 +30,22 @@ class PoseDataset(Dataset):
 
 
 def get_dataloader(path=Path("__data"), batch_size=32):
+    rng = torch.Generator().manual_seed(42)
     csv_files = list(path.glob("*.csv"))
     datasets = [PoseDataset(csv_file) for csv_file in csv_files]
     dataset_mixed = ConcatDataset(datasets)
-    dataloader = DataLoader(dataset_mixed, batch_size=batch_size, shuffle=True)
-    return dataloader
+    train_set, valid_set = random_split(
+        dataset_mixed, [0.8, 0.2], generator=rng)
+    train_dataloader = DataLoader(
+        train_set, batch_size=batch_size, shuffle=True)
+    valid_dataloader = DataLoader(
+        valid_set, batch_size=batch_size, shuffle=True)
+    return train_dataloader, valid_dataloader
 
 
 if __name__ == "__main__":
-    dataloader = get_dataloader()
+    train_dataloader, valid_dataloader = get_dataloader()
     # Example usage
-    for batch_data, batch_time, batch_labels in dataloader:
-        print(batch_time, batch_labels)
+    for batch_data, batch_time, batch_labels in train_dataloader:
+        print(batch_time[0], batch_labels)
         break
