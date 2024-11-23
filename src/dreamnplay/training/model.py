@@ -2,7 +2,7 @@ import torch
 
 WINDOW_SIZE = 6
 POSITION_DIM = 132
-NUM_CLASSES = 3
+NUM_CLASSES = 4
 
 
 class MLPBaseline(torch.nn.Module):
@@ -14,7 +14,6 @@ class MLPBaseline(torch.nn.Module):
         self.fc2 = torch.nn.Linear(64, 32)
         self.fc3 = torch.nn.Linear(32, output_dim)
 
-    
     def forward(self, x):
         x = x.view(-1, self.input_dim)
         x = torch.relu(self.fc1(x))

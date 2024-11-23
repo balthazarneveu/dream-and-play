@@ -7,7 +7,8 @@ import ast
 CLASSES_NAMES = {
     "IDLE": 0,
     "ACTIVATE": 1,
-    "CROUCH": 2
+    "CROUCH": 2,
+    "JUMP": 3,
 }
 
 
@@ -56,9 +57,16 @@ def get_dataloader(path=Path("__data"), batch_size=32):
 
 
 if __name__ == "__main__":
-    train_dataloader, valid_dataloader = get_dataloader()
-    # Example usage
-    for batch_data, batch_time, batch_labels in train_dataloader:
-        print(batch_data.shape, batch_time.shape)
-        print(batch_time[0], batch_labels)
-        break
+    dataset = PoseDataset(Path("__raw_data") / "2024-11-23-01-32-18.143.csv")
+    from matplotlib import pyplot as plt
+    from dreamnplay.controller.motion_detection_baseline import process_keypoints_list
+    process_keypoints_list(dataset[0][0])
+    # signal = 
+    # plt.plot(dataset[0][0][:, 0])
+    # plt.show()
+    # train_dataloader, valid_dataloader = get_dataloader()
+    # # Example usage
+    # for batch_data, batch_time, batch_labels in train_dataloader:
+    #     print(batch_data.shape, batch_time.shape)
+    #     print(batch_time[0], batch_labels)
+    #     break
