@@ -4,6 +4,12 @@ import torch
 from pathlib import Path
 import ast
 
+CLASSES_NAMES = {
+    "IDLE": 0,
+    "ACTIVATE": 1,
+    "CROUCH": 2
+}
+
 
 class PoseDataset(Dataset):
     def __init__(self, csv_file):
@@ -28,7 +34,7 @@ class PoseDataset(Dataset):
         # -> position (x, y, z, v) , timestep, label
         positions = self.data[idx:idx+self.context_length]
         timesteps = self.times[idx:idx+self.context_length]
-        labels = self.labels[idx+self.context_length-1]
+        labels = CLASSES_NAMES[self.labels[idx+self.context_length-1]]
         return torch.tensor(positions), torch.tensor(timesteps), labels
 
 

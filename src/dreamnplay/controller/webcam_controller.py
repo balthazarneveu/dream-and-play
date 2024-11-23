@@ -3,6 +3,7 @@ import cv2
 import mediapipe as mp
 import time
 from dreamnplay.controller.motion_detection import Detector
+from dreamnplay.controller.motion_detection_baseline import DetectorBaseline
 from dreamnplay.controller.motion_heuristics import HeuristicsDetector
 mp_draw = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
@@ -12,13 +13,14 @@ keypoints_names = [e for e in mp.solutions.pose.PoseLandmark]
 
 class Controller:
     def __init__(self, webcam_show: bool = False, allow_hand_control: bool = True, allow_body_control: bool = True,
-                 heuristics=True):
+                 heuristics=False):
         self.allow_body_control = allow_body_control
         self.allow_hand_control = allow_hand_control
         assert allow_hand_control or allow_body_control, "At least one control mode must be enabled."
         self.frame_count = 0
         if not heuristics:
-            self.motion_detector = Detector()
+            # self.motion_detector = Detector()
+            self.motion_detector = DetectorBaseline()
         else:
             self.motion_detector = HeuristicsDetector()
         # Initialize MediaPipe hands and pose
