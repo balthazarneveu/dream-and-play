@@ -214,7 +214,7 @@ def update():
             and abs(block.z - player.z) < 1.5
             for block in lane_blocks
         )
-        print(is_on_lane)
+        # print(is_on_lane)
         if is_on_lane:
             player.y = -2.5 + player.scale_y / 2  # Adjust player to be on the ground
             player_velocity = 0
