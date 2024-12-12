@@ -1,6 +1,5 @@
 from dreamnplay.training.model import MLPBaseline, WINDOW_SIZE
 from dreamnplay.training.dataset import CLASSES_NAMES
-import safetensors.torch
 import mediapipe as mp
 import time
 import torch

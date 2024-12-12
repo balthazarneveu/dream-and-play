@@ -1,8 +1,6 @@
-import sys
 import cv2
 import mediapipe as mp
 import time
-from dreamnplay.controller.motion_detection import Detector
 from dreamnplay.controller.motion_detection_baseline import DetectorBaseline
 from dreamnplay.controller.motion_heuristics import HeuristicsDetector
 mp_draw = mp.solutions.drawing_utils
